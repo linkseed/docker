@@ -8,7 +8,7 @@ set -e
 }
 
 usage() {
-	printf >&2 '%s: [-r release] [-m mirror] [-s]  [-c additional repository]\n' "$0"
+	printf >&2 '%s: [-r release] [-m mirror] [-s]  [-c additional repository] [-a architecture]\n' "$0"
 	exit 1
 }
 
@@ -39,11 +39,13 @@ conf() {
 }
 
 pack() {
-	local id
-	id=$(tar --numeric-owner -C $ROOTFS -c . | docker import - alpine:$REL)
+	[ $SAVE -eq 0 ] || return
 
-	docker tag $id alpine:latest
-	docker run -i -t --rm alpine printf 'alpine:%s with id=%s created!\n' $REL $id
+	local id
+	id=$(tar --numeric-owner -C $ROOTFS -c . | docker import - alpine_$ARCH:$REL)
+
+	docker tag $id alpine_$ARCH:latest
+	docker run -i -t --rm alpine_$ARCH printf 'alpine:%s with id=%s created!\n' $REL $id
 }
 
 save() {
@@ -65,6 +67,9 @@ while getopts "hr:m:s" opt; do
 			;;
 		c)
 			ADDITIONALREPO=community
+			;;
+		a)
+			ARCH=$OPTARG
 			;;
 		*)
 			usage
